@@ -17,6 +17,9 @@ ENV DASHBOARD_URL "https://darksky.net"
 ENV DISPLAY_NAME ""
 ENV IGNORE_CEC "True"
 
+ENV MQTT_SERVER "iot.eclipse.org"
+ENV MQTT_USERNAME ""
+ENV MQTT_PASSWORD ""
+
 # Run app.sh when the container launches
 CMD ["./app.sh"]
-
