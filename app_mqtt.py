@@ -206,6 +206,9 @@ if len(casts) == 0:
     print('No Devices Found')
     exit()
 
+for cc in casts:
+    print('enumerate-casts', cc.device.friendly_name)
+
 cast = next(cc for cc in casts if DISPLAY_NAME in (None, '') or cc.device.friendly_name == DISPLAY_NAME)
 
 if not cast:
