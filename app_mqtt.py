@@ -134,7 +134,7 @@ class DashboardLauncher():
             else:
                 self.dashboard_url_force = False
 
-            if 'force' in parsed_json:
+            if 'takeover' in parsed_json:
                 print("Takeover: "+str(parsed_json["takeover"]))
                 self.takeover = parsed_json["takeover"]
             else:
