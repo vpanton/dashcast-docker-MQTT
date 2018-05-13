@@ -13,7 +13,8 @@ ADD . /app
 RUN pip install -r requirements.txt
 
 # Define environment variables
-ENV DASHBOARD_URL "https://darksky.net"
+ENV DEFAULT_DASHBOARD_URL "https://darksky.net"
+ENV DEFAULT_DASHBOARD_URL_FORCE "False"
 ENV DISPLAY_NAME ""
 ENV IGNORE_CEC "True"
 

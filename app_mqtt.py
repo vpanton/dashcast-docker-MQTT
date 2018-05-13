@@ -18,7 +18,8 @@ import pychromecast.controllers.dashcast as dashcast
 print('DashCast')
 print('Searching for Chromecasts...')
 
-DASHBOARD_URL = os.getenv('DASHBOARD_URL', 'https://home-assistant.io')
+DEFAULT_DASHBOARD_URL = os.getenv('DEFAULT_DASHBOARD_URL', 'https://home-assistant.io')
+DEFAULT_DASHBOARD_URL_FORCE = os.getenv('DEFAULT_DASHBOARD_URL_FORCE') == 'True'
 DISPLAY_NAME = os.getenv('DISPLAY_NAME')
 IGNORE_CEC = os.getenv('IGNORE_CEC') == 'True'
 
@@ -38,7 +39,7 @@ if '--show-debug' in sys.argv:
 
 class DashboardLauncher():
 
-    def __init__(self, device, dashboard_url='https://home-assistant.io', dashboard_app_name='DashCast'):
+    def __init__(self, device, dashboard_url='https://home-assistant.io', dashboard_url_force=False, dashboard_app_name='DashCast'):
         self.device = device
         print('DashboardLauncher', self.device.name)
 
@@ -56,12 +57,14 @@ class DashboardLauncher():
 
         # set default url and dashboard app name
         self.dashboard_url = dashboard_url
+        self.dashboard_url_force = dashboard_url_force
         self.dashboard_app_name = dashboard_app_name
+        self.takeover = False
 
         # Check status on init.
         self.new_cast_status(self.device.status)
         # Launch dashboard on init.
-        self.launch_dashboard(self.dashboard_url)
+        self.launch_dashboard(self.dashboard_url, self.dashboard_url_force)
 
 
         # While dashboard is launching, start MQTT connection
@@ -87,7 +90,7 @@ class DashboardLauncher():
         while self.keep_looping:
             if self.launch_it:
                 print('launch_it', self.launch_it)
-                self.launch_dashboard(self.dashboard_url)
+                self.launch_dashboard(self.dashboard_url, self.dashboard_url_force)
                 self.launch_it = False
                 time.sleep(10)
             time.sleep(1)
@@ -121,10 +124,26 @@ class DashboardLauncher():
         # set dashboard_url to received data and
         # set to relaunch/update dashboard
         print("Chromecast: "+DISPLAY_NAME)
-        print("Url: "+parsed_json["url"])
-        print("Force: "+str(parsed_json["force"]))
-        self.dashboard_url = parsed_json["url"]
-        self.launch_it = True
+        if 'url' in parsed_json:
+            print("Url: "+parsed_json["url"])
+            self.dashboard_url = parsed_json["url"]
+
+            if 'force' in parsed_json:
+                print("Force: "+str(parsed_json["force"]))
+                self.dashboard_url_force = parsed_json["force"]
+            else:
+                self.dashboard_url_force = False
+
+            if 'force' in parsed_json:
+                print("Takeover: "+str(parsed_json["takeover"]))
+                self.takeover = parsed_json["takeover"]
+            else:
+                self.takeover = False
+
+            self.dashboard_url = parsed_json["url"]
+
+            if (self.is_dashboard_active() or self.takeover):
+                self.launch_it = True
 
 
     # Define pychromecast Callback Receivers
@@ -170,14 +189,14 @@ class DashboardLauncher():
         """ Returns if an app other than the dashboard or the Backdrop is (probably) visible. """
         return (self.device.app_display_name not in ('Backdrop', self.dashboard_app_name))
 
-    def launch_dashboard(self, url_to_load):
+    def launch_dashboard(self, url_to_load, force):
         print('Launching dashboard on Chromecast', self.device.name)
 
         def callback(response):
             print('callback called', response)
 
         try:
-            self.controller.load_url(url_to_load, callback_function=callback)
+            self.controller.load_url(url_to_load, force, callback_function=callback)
         except Exception as e:
             print(e)
             pass
@@ -215,9 +234,8 @@ if not cast:
     print('Chromecast with name', DISPLAY_NAME, 'not found')
     exit()
 
-DashboardLauncher(cast, dashboard_url=DASHBOARD_URL)
+DashboardLauncher(cast, dashboard_url=DEFAULT_DASHBOARD_URL, dashboard_url_force=DEFAULT_DASHBOARD_URL_FORCE)
 
 # Keep running
 while True:
     time.sleep(1)
-
