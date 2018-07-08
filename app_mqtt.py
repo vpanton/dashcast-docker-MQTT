@@ -23,7 +23,7 @@ DEFAULT_DASHBOARD_URL_FORCE = os.getenv('DEFAULT_DASHBOARD_URL_FORCE') == 'True'
 DISPLAY_NAME = os.getenv('DISPLAY_NAME')
 IGNORE_CEC = os.getenv('IGNORE_CEC') == 'True'
 
-SUBSCRIBE = 'chromecast/'+ str(DISPLAY_NAME) +'/command/dashcast'
+SUBSCRIBE = 'chromecast/' + str(DISPLAY_NAME) + '/command/dashcast'
 MQTT_SERVER = os.getenv('MQTT_SERVER', 'iot.eclipse.org')
 MQTT_USERNAME = os.getenv('MQTT_USERNAME')
 MQTT_PASSWORD = os.getenv('MQTT_PASSWORD')
@@ -39,7 +39,8 @@ if '--show-debug' in sys.argv:
 
 class DashboardLauncher():
 
-    def __init__(self, device, dashboard_url='https://home-assistant.io', dashboard_url_force=False, dashboard_app_name='DashCast'):
+    def __init__(self, device, dashboard_url='https://home-assistant.io',
+                 dashboard_url_force=False, dashboard_app_name='DashCast'):
         self.device = device
         print('DashboardLauncher', self.device.name)
 
@@ -66,15 +67,14 @@ class DashboardLauncher():
         # Launch dashboard on init.
         self.launch_dashboard(self.dashboard_url, self.dashboard_url_force)
 
-
         # While dashboard is launching, start MQTT connection
         print("Starting MQTT")
-        client = mqtt.Client("P1") #create new instance
-        client.on_message=self.on_message #attach function to callback
-        client.on_connect=self.on_connect
-        print("Connecting to Broker: "+MQTT_SERVER)
+        client = mqtt.Client("client_" + str(DISPLAY_NAME))  # create new instance
+        client.on_message = self.on_message  # attach function to callback
+        client.on_connect = self.on_connect
+        print("Connecting to Broker: " + MQTT_SERVER)
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-        client.connect(MQTT_SERVER) #connect to broker
+        client.connect(MQTT_SERVER)  # connect to broker
 
         # wait for dashboard to finish loading, then start MQTT client loop
         time.sleep(10)
@@ -99,69 +99,67 @@ class DashboardLauncher():
 
     # define MQTT client callbacks
 
-    def on_connect(self, client, userdata,flags, rc):
+    def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
-        print("Subscribing to topic ",SUBSCRIBE)
+        print("Subscribing to topic ", SUBSCRIBE)
         client.subscribe(SUBSCRIBE)
 
     def on_message(self, client, userdata, message):
-        print("Message received: " ,str(message.payload.decode("utf-8")))
-        print("-Topic: ",message.topic)
-        print("-QOS: ",message.qos)
-        print("-Retain: ",message.retain)
+        print("Message received: ", str(message.payload.decode("utf-8")))
+        print("-Topic: ", message.topic)
+        print("-QOS: ", message.qos)
+        print("-Retain: ", message.retain)
 
         # try decoding received message
         try:
-            json_decode=str(message.payload.decode("utf-8","ignore"))
+            json_decode = str(message.payload.decode("utf-8", "ignore"))
             print("Decoding Json")
-            parsed_json=json.loads(json_decode)
+            parsed_json = json.loads(json_decode)
         except json.decoder.JSONDecodeError:
             print("Error passing JSON")
             return
 
         # set dashboard_url to received data and
         # set to relaunch/update dashboard
-        print("Chromecast: "+DISPLAY_NAME)
+        print("Chromecast: " + DISPLAY_NAME)
         if 'url' in parsed_json:
-            print("Url: "+parsed_json["url"])
+            print("Url: " + parsed_json["url"])
             self.dashboard_url = parsed_json["url"]
 
             if 'force' in parsed_json:
-                print("Force: "+str(parsed_json["force"]))
+                print("Force: " + str(parsed_json["force"]))
                 self.dashboard_url_force = parsed_json["force"]
             else:
                 self.dashboard_url_force = False
 
             if 'takeover' in parsed_json:
-                print("Takeover: "+str(parsed_json["takeover"]))
+                print("Takeover: " + str(parsed_json["takeover"]))
                 self.takeover = parsed_json["takeover"]
             else:
                 self.takeover = False
 
             self.dashboard_url = parsed_json["url"]
 
-            if (self.is_dashboard_active() or self.takeover):
+            if self.is_dashboard_active() or self.takeover:
                 self.launch_it = True
 
-
     # Define pychromecast Callback Receivers
-
     def new_cast_status(self, cast_status):
         """ Called when a new cast status has been received. """
         print('new_cast_status', self.device.name, cast_status)
 
         def should_launch():
             """ If the device is active, the dashboard is not already active, and no other app is active. """
-            print('should launch', self.is_device_active(), not self.is_dashboard_active(), not self.is_other_app_active())
+            print('should launch', self.is_device_active(),
+                  not self.is_dashboard_active(), not self.is_other_app_active())
             return (self.is_device_active()
                     and not self.is_dashboard_active()
                     and not self.is_other_app_active())
 
         if should_launch():
             self.launch_it = True
-
 
     def new_media_status(self, media_status):
         """Called when a new MediaStatus is received."""
@@ -170,7 +168,6 @@ class DashboardLauncher():
     def new_connection_status(self, connection_status):
         """Called when a new ConnectionStatus is received."""
         print('new_connection_status', self.device.name, connection_status)
-
 
     def is_device_active(self):
         """ Returns if there is currently an app running and (maybe) visible. """
@@ -183,11 +180,11 @@ class DashboardLauncher():
 
     def is_dashboard_active(self):
         """ Returns if the dashboard is (probably) visible. """
-        return (self.device.app_display_name == self.dashboard_app_name)
+        return self.device.app_display_name == self.dashboard_app_name
 
     def is_other_app_active(self):
         """ Returns if an app other than the dashboard or the Backdrop is (probably) visible. """
-        return (self.device.app_display_name not in ('Backdrop', self.dashboard_app_name))
+        return self.device.app_display_name not in ('Backdrop', self.dashboard_app_name)
 
     def launch_dashboard(self, url_to_load, force):
         print('Launching dashboard on Chromecast', self.device.name)
@@ -201,24 +198,6 @@ class DashboardLauncher():
             print(e)
             pass
 
-
-"""
-Check for cast.socket_client.get_socket() and
-handle it with cast.socket_client.run_once()
-"""
-"""
-def main_loop():
-    def callback(chromecast):
-        print('found', chromecast)
-        DashboardLauncher(chromecast, dashboard_url='http://192.168.1.132:8080')
-
-    pychromecast.get_chromecasts(blocking=False, callback=callback)
-
-    while True:
-        time.sleep(1)
-
-main_loop()
-"""
 
 casts = pychromecast.get_chromecasts()
 if len(casts) == 0:
