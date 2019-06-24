@@ -1,7 +1,7 @@
 # This Dockerfile will only work with host networking enabled.
 
 # Use an official Python runtime as a parent image
-FROM arm64v8/python:3
+FROM arm64v8/python:3.7.3
 
 # Set the working directory to /app
 WORKDIR /app
