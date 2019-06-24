@@ -1,7 +1,7 @@
 # This Dockerfile will only work with host networking enabled.
 
 # Use an official Python runtime as a parent image
-FROM arm64v8/python:3.7.3
+FROM docker.io/library/arm64v8/python:3.7.3
 
 COPY qemu-aarch64-static /usr/bin/
 
