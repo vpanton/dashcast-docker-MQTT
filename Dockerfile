@@ -2,7 +2,7 @@
 
 # Use an official Python runtime as a parent image
 FROM docker.io/project31/aarch64-alpine-qemu:3.5
-RUN [ “cross-build-start” ]
+RUN [ "cross-build-start" ]
 
 # ensure local python is preferred over distribution python
 ENV PATH /usr/local/bin:$PATH
@@ -144,7 +144,7 @@ ENV MQTT_SERVER "iot.eclipse.org"
 ENV MQTT_USERNAME ""
 ENV MQTT_PASSWORD ""
 
-RUN [ “cross-build-end” ]
+RUN [ "cross-build-end" ]
 
 # Run app.sh when the container launches
 CMD ["./app.sh"]
